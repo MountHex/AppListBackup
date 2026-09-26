@@ -27,6 +27,8 @@ For the upstream project, see:
 - [AndroidLabs-org/AppListBackup](https://github.com/AndroidLabs-org/AppListBackup)
 - [F-Droid package metadata for AppListBackup](https://gitlab.com/fdroid/fdroiddata/-/blob/master/metadata/org.androidlabs.applistbackup.yml)
 
+---
+
 AppListBackup is the ultimate solution for generating a backup list of installed applications on your Android device.
 
 This user-friendly app allows you to automatically create and view a backup list of all your installed apps with just a few taps.
