@@ -60,6 +60,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import org.androidlabs.applistbackup.BackupService.Companion.FILE_NAME_PREFIX
+import org.androidlabs.applistbackup.BackupService.Companion.getConfiguredFileNamePrefix
 import org.androidlabs.applistbackup.backupnow.BackupFragment
 import org.androidlabs.applistbackup.data.BackupFormat
 import org.androidlabs.applistbackup.reader.BackupReaderFragment
@@ -89,7 +90,13 @@ class MainActivity : FragmentActivity() {
                 }
 
                 val fileExtensions = BackupFormat.entries.map { format -> format.fileExtension() }
-                if (fileName != null && fileName.startsWith(FILE_NAME_PREFIX) && fileExtensions.any { ext ->
+                if (
+                    fileName != null &&
+                    (
+                            fileName.startsWith(FILE_NAME_PREFIX) ||
+                                    fileName.startsWith(getConfiguredFileNamePrefix(this))
+                            ) &&
+                    fileExtensions.any { ext ->
                         fileName.endsWith(
                             ".$ext"
                         )

@@ -231,6 +231,7 @@ private fun SettingsScreen(
     val backupUri = viewModel.backupUri.observeAsState()
     val backupFormat = viewModel.backupFormats.observeAsState(initial = setOf(BackupFormat.HTML))
     val backupLimit = viewModel.backupLimit.observeAsState(initial = -1)
+    val backupFilenamePrefix = viewModel.backupFilenamePrefix.observeAsState(initial = "")
 
     val isUnlimited = backupLimit.value == -1
 
@@ -242,10 +243,15 @@ private fun SettingsScreen(
         )
     }
 
+    val (filenamePrefixInput, setFilenamePrefixInput) = remember {
+        mutableStateOf(backupFilenamePrefix.value)
+    }
     LaunchedEffect(backupLimit) {
         backupLimitFloat = backupLimit.value.toFloat()
     }
-
+    LaunchedEffect(key1 = backupFilenamePrefix.value) {
+        setFilenamePrefixInput(backupFilenamePrefix.value)
+    }
     val localContext = LocalContext.current
 
     LaunchedEffect(key1 = true) {
@@ -306,7 +312,28 @@ private fun SettingsScreen(
                 )
             }
         )
-
+        SettingsRow(
+            title = stringResource(id = R.string.backup_filename_prefix),
+            subtitle = stringResource(id = R.string.backup_filename_prefix_summary),
+            iconView = {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_file_24),
+                    contentDescription = "Filename prefix",
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                )
+            },
+            rightView = {
+                OutlinedTextField(
+                    value = filenamePrefixInput,
+                    onValueChange = { newValue ->
+                        setFilenamePrefixInput(newValue)
+                        viewModel.saveBackupFilenamePrefix(newValue)
+                    },
+                    singleLine = true,
+                    modifier = Modifier.width(180.dp)
+                )
+            }
+        )
         SettingsRow(
             title = stringResource(id = R.string.keep_backups),
             subtitle = null,

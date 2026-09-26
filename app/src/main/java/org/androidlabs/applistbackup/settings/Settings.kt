@@ -15,6 +15,7 @@ object Settings {
     private const val KEY_BACKUP_FORMATS: String = "backup_formats"
     private const val KEY_BACKUP_EXCLUDE_DATA: String = "backup_exclude_data"
     private const val KEY_BACKUP_LIMIT: String = "backup_limit"
+    private const val KEY_BACKUP_FILENAME_PREFIX: String = "backup_filename_prefix"
 
     fun getBackupUri(context: Context): Uri? {
         val sharedPreferences = context.getSharedPreferences(PREFERENCES_FILE, MODE_PRIVATE)
@@ -27,7 +28,10 @@ object Settings {
             putString(KEY_BACKUP_URI, uri.toString())
         }
     }
-
+    fun getBackupFilenamePrefix(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences(PREFERENCES_FILE, MODE_PRIVATE)
+        return sharedPreferences.getString(KEY_BACKUP_FILENAME_PREFIX, "") ?: ""
+    }
     fun getBackupFormats(context: Context): Set<BackupFormat> {
         val sharedPreferences = context.getSharedPreferences(PREFERENCES_FILE, MODE_PRIVATE)
         val formatString = sharedPreferences.getString(KEY_BACKUP_FORMATS, null)
@@ -35,7 +39,12 @@ object Settings {
             BackupFormat.HTML
         )
     }
-
+    fun setBackupFilenamePrefix(context: Context, prefix: String) {
+        val sharedPreferences = context.getSharedPreferences(PREFERENCES_FILE, MODE_PRIVATE)
+        sharedPreferences.edit {
+            putString(KEY_BACKUP_FILENAME_PREFIX, prefix)
+        }
+    }
     fun setBackupFormats(context: Context, formats: Set<BackupFormat>) {
         val sharedPreferences = context.getSharedPreferences(PREFERENCES_FILE, MODE_PRIVATE)
         sharedPreferences.edit {

@@ -64,6 +64,19 @@ class BackupService : Service() {
 
         const val FILE_NAME_PREFIX = "app-list-backup"
 
+        fun getConfiguredFileNamePrefix(context: Context): String {
+            val configuredPrefix = Settings.getBackupFilenamePrefix(context).trim()
+
+            if (configuredPrefix.isEmpty()) {
+                return FILE_NAME_PREFIX
+            }
+
+            return configuredPrefix
+                .replace(Regex("""[<>:"/\\|?*]"""), "-")
+                .trim('.', ' ')
+                .ifEmpty { FILE_NAME_PREFIX }
+        }
+
         val isRunning = MutableStateFlow(false)
 
         private var onCompleteCallback: ((Uri) -> Unit)? = null
@@ -126,6 +139,10 @@ class BackupService : Service() {
 
         private fun getRawBackupFiles(context: Context): List<BackupRawFile> {
             val fileExtensions = BackupFormat.entries.map { it.fileExtension() }
+            val fileNamePrefixes = setOf(
+                FILE_NAME_PREFIX,
+                getConfiguredFileNamePrefix(context)
+            )
 
             val backupsUri = Settings.getBackupUri(context) ?: return emptyList()
             if (isTV(context)) {
@@ -133,7 +150,7 @@ class BackupService : Service() {
                 if (backupsDir.exists() && backupsDir.isDirectory) {
                     backupsDir.listFiles()
                     val files = backupsDir.listFiles()?.filter { file ->
-                        file.name.startsWith(FILE_NAME_PREFIX) && fileExtensions.any { ext ->
+                        fileNamePrefixes.any { prefix -> file.name.startsWith(prefix) } && fileExtensions.any { ext ->
                             file.name.endsWith(
                                 ".$ext"
                             )
@@ -147,7 +164,7 @@ class BackupService : Service() {
                 if (backupsDir.exists() && backupsDir.isDirectory) {
                     val files = backupsDir.listFiles().filter { file ->
                         file.name?.let { name ->
-                            name.startsWith(FILE_NAME_PREFIX) && fileExtensions.any { ext ->
+                            fileNamePrefixes.any { prefix -> name.startsWith(prefix) } && fileExtensions.any { ext ->
                                 name.endsWith(
                                     ".$ext"
                                 )
@@ -179,7 +196,11 @@ class BackupService : Service() {
             val infos = files
                 .map { file ->
                     val name = file.name
-                    val dateString = name.removePrefix(FILE_NAME_PREFIX).substringBeforeLast('.')
+                    val dateString = Regex("""-(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})\.[^.]+$""")
+                        .find(name)
+                        ?.groupValues
+                        ?.get(1)
+                        .orEmpty()
                     val date = try {
                         if (dateString.isNotEmpty()) {
                             dateFormat.parse(dateString) ?: Date()
@@ -221,7 +242,7 @@ class BackupService : Service() {
 
         fun getFileInfoFromUri(context: Context, uri: Uri): FileInfo? {
             val pattern =
-                Pattern.compile("$FILE_NAME_PREFIX-(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})\\.(\\w+)")
+                Pattern.compile(".*-(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})\\.(\\w+)")
             val matcher = pattern.matcher(uri.toString())
 
             val titleFormatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
@@ -472,7 +493,8 @@ class BackupService : Service() {
 
                 formats.forEach { format ->
                     try {
-                        val fileName = "$FILE_NAME_PREFIX-$currentTime.${format.fileExtension()}"
+                        val fileNamePrefix = getConfiguredFileNamePrefix(this)
+                        val fileName = "$fileNamePrefix-$currentTime.${format.fileExtension()}"
                         val newFile = backupsDir.createFile(format.mimeType(), fileName)
 
                         when (format) {
@@ -829,7 +851,7 @@ class BackupService : Service() {
                     if (isVersioningDisabled) {
                         successfulResults.forEach {
                             val newFileName =
-                                "$FILE_NAME_PREFIX.${it.format.fileExtension()}"
+                                "${getConfiguredFileNamePrefix(this)}.${it.format.fileExtension()}"
                             it.file?.renameTo(newFileName)?.let { newFile ->
                                 it.file = newFile
                             }
