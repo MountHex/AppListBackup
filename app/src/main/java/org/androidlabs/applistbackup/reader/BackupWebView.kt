@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -99,9 +100,18 @@ fun BackupWebView(
         if (uri != null) {
             withContext(Dispatchers.IO) {
                 val urlString = uri.toString()
+
                 withContext(Dispatchers.Main) {
                     isLoading = true
                     webView.loadUrl(urlString)
+                }
+
+                if (uri.scheme == "content") {
+                    delay(1500)
+
+                    withContext(Dispatchers.Main) {
+                        webView.loadUrl(urlString)
+                    }
                 }
             }
         }

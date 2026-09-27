@@ -252,9 +252,16 @@ class BackupService : Service() {
                 val timestamp = getFileDate(context, uri)
                 val date = Date(timestamp)
                 val formattedDate = titleFormatter.format(date)
-                val extension = uri.toString().split(".").last()
-                val format = extension.let { BackupFormat.fromExtension(it) }
-                return FileInfo(uri, "$formattedDate (${format.value})", format.value, date)
+                val extension = uri.toString().substringAfterLast('.', "")
+                if (extension.isEmpty()) {
+                    return null
+                }
+
+                val format = runCatching {
+                    BackupFormat.fromExtension(extension)
+                }.getOrNull() ?: return null
+
+                return FileInfo(uri, "${formattedDate} (${format.value})", format.value, date)
             } else {
                 val dateString = matcher.group(1)
                 val extension = matcher.group(2)

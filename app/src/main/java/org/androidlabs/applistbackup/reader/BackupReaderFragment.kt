@@ -1,6 +1,7 @@
 package org.androidlabs.applistbackup.reader
 
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -138,9 +139,38 @@ private fun DisplayContent(
     val backups by viewModel.backupFiles.collectAsState(initial = emptyList())
     val installedPackages by viewModel.installedPackages.collectAsState(initial = emptyList())
 
-    if (uri != null) {
-        val extension = uri.toString().substringAfterLast('.', "").lowercase()
-        val format = BackupFormat.fromExtension(extension)
+    val currentUri = uri
+
+    if (currentUri != null) {
+        val extension = remember(currentUri) {
+            val displayNameExtension = context.contentResolver.query(
+                currentUri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+
+                if (cursor.moveToFirst() && nameIndex >= 0) {
+                    cursor.getString(nameIndex)
+                        ?.substringAfterLast('.', "")
+                        ?.lowercase()
+                } else {
+                    null
+                }
+            }
+
+            displayNameExtension
+                ?.takeIf { it.isNotEmpty() }
+                ?: currentUri.toString()
+                    .substringAfterLast('.', "")
+                    .lowercase()
+        }
+
+        val format = runCatching {
+            BackupFormat.fromExtension(extension)
+        }.getOrNull()
 
         val uriBackup = remember(uri, backups) {
             backups.find { backup -> backup.uri == uri }
@@ -208,6 +238,8 @@ private fun DisplayContent(
                         modifier = Modifier.weight(1f),
                         uri = uri
                     )
+                }
+                null -> {
                 }
             }
         }
